@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Transcription</title>
+</head>
+<body>
+    <h1>Audio Transcription</h1>
+    <button id="recordButton">Start Recording</button>
+    <p id="status">Click the button to start recording.</p>
+    <p>Transcription: <span id="transcription"></span></p>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        document.getElementById("recordButton").onclick = async () => {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        };
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = () => sendAudio();
+
+            mediaRecorder.start();
+            document.getElementById("recordButton").innerText = "Stop Recording";
+            document.getElementById("status").innerText = "Recording...";
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            document.getElementById("recordButton").innerText = "Start Recording";
+            document.getElementById("status").innerText = "Processing...";
+        }
+
+        async function sendAudio() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            audioChunks = [];
+
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.wav');
+
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById("transcription").innerText = result.transcription;
+                } else {
+                    document.getElementById("transcription").innerText = result.error;
+                }
+            } catch (error) {
+                document.getElementById("transcription").innerText = "Error processing audio.";
+            }
+
+            document.getElementById("status").innerText = "Click the button to start recording.";
+        }
+    </script>
+</body>
+</html>
