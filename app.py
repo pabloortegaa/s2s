@@ -7,6 +7,14 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
+#another route
+@app.route('/health')
+def health():
+    return "OK"
+
+
+
+
 if __name__ == '__main__':
     port = os.environ.get('FLASK_PORT') or 8080
     port = int(port)
